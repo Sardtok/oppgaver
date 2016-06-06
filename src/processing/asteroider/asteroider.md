@@ -213,3 +213,28 @@ void oppdaterSkip() {
 }
 ```
 
+Da gjenstår det bare å legge til noen flammer eller liknende bak skipet når man gir gass. Det finnes utrolig mange måter å tegne slike flammer. Derfor bør du selv velge hvordan du vil at disse flammene skal se ut. Likevel får du se en enkel løsning her:
+
+```processing
+void draw() {
+  oppdaterSkip();
+  
+  background(0);
+  
+  translate(x, y);
+  rotate(vinkel);
+
+  noStroke();
+  fill(255);
+  triangle(-10, -10, -10, 10, 20, 0);
+  
+  if (fram) {
+    stroke(255);
+    noFill();
+    ellipse(-15, 0, 10, 10);
+    line(-20, 0, -25, 0);
+  }
+}
+```
+
+Merk at siden vi slår av fylling av former som tegnes opp, og endrer linjefargen til hvit når vi tegner opp flammen, så må vi sette fyllfargen tilbake til hvit og slå av opptegning av omrisset.
