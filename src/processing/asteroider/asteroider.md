@@ -238,3 +238,114 @@ void draw() {
 ```
 
 Merk at siden vi slår av fylling av former som tegnes opp, og endrer linjefargen til hvit når vi tegner opp flammen, så må vi sette fyllfargen tilbake til hvit og slå av opptegning av omrisset.
+
+# Asteroider
+
+Nå som vi har et romskip vi kan fly rundt, er det på tide å få lagt inn noen asteroider som vi kan skyte på. Vi vil ha flere enn en, så vi må bruke lister av noe slag til å holde rede på disse asteroidene. For å holde koden ryddig skal vi også bruke en klasse for asteroidene som vi legger i en egen fane. Klasser lar oss samle data og funksjonalitet som hører sammen i en egen atskilt del. De lar oss også lage flere eksemplarer av ting som har samme type data og oppfører seg på samme måte; disse eksemplarene kalles objekter.
+
++ Lag en ny fane ved å trykke på den lille nedoverpilen og velg "New Tab" (Ctrl + Shift + N eller Cmd + Shift + N).
++ Gi den navnet "Asteroide".
+
+Faner i Processing er et merkelig lite triks. Innholdet i alle fanene slåes sammen til en stor fil før programmet ditt lages. Det er derfor viktig at innholdet i hver fane er atskilte deler: en eller flere hele funksjoner, hele klasser eller variabeldeklarasjoner (variabeldeklarasjoner er de setningene som lager en ny variabel).
+
+Nå som vi har en fane til asteroide-koden, kan vi begynne å lage asteroide-klassen vår her. Alle asteroider har en posisjon, en hastighet og en størrelse. Så vi begynner med å lage en klasse med disse variablene, og med en konstruktør som setter disse:
+
+```processing
+class Asteroide {
+  float x;
+  float y;
+  float xFart;
+  float yFart;
+  float radius;
+  
+  Asteroide(float x, float y, float xFart, float yFart, float radius) {
+    this.x = x;
+    this.y = y;
+    this.xFart = xFart;
+    this.yFart = yFart;
+    this.radius = radius;
+  }
+}
+```
+
+Dette er kanskje den første oppgaven hvor du bruker klasser, og da er det sikkert mye nytt i koden ovenfor, så la oss ta en titt på det som står her. Når vi skal lage en ny klasse, begynner vi med `class Klassenavn` etterfulgt av innholdet i klassen i krøllparenteser.
+
+Inne i klassen ser vi to ting, først fem variabeldeklarasjoner som sier hvilke variabler som skal finnes i Asteroide-objekter. Disse er etterfult av en konstruktør. Konstruktører er en spesielle funksjon som brukes når man lager objekter av en klasse. Ofte ønsker vi å sette variabler i et objekt når det lages, og det gjøres da inne i konstruktøren.
+
+Konstruktøren er en spesiell funksjon med samme navn som klassen og uten returtype foran navnet. Her har vi også valgt å ha med parametere for alle variablene i klassen slik at vi kan sette dem. Om du ikke har sett funksjoner med parametere bli deklarert før, så er det bare variabler som deklareres i parentesene til funksjonen med komma mellom; verdiene deres settes når funksjonen kalles som du har sett i eksempler som kallet på `triangle` når vi tegner skipet. `this` brukes for å skille mellom variablene i funksjonen og variablene som finnes i objektet som opprettes. Det er et spesielt ord som gir oss tilgang til objektet funksjonen kjøres for. `this.x = x;` sier at objektets `x` skal settes til verdien til `x` i funksjonskallet.
+
+Nå har vi sett på koden, men vi har ikke sett hva den gjør eller hvordan vi kan bruke den ennå. La oss legge til en asteroide og tegne den opp.
+
++ Åpne den andre fanen der koden for skipet finnes.
++ Lag en variabel med type Asteroide:
+  
+  ```processing
+  Asteroide ast;
+  ```
+  
++ Lag en asteroide og sett verdien til variabelen vi akkurat lagde:
+  
+  ```processing
+  void setup() {
+    ...
+    ast = new Asteroide(50, 50, 3, 2, 20);
+  }
+  ```
+  
++ Tegn opp asteroiden:
+  
+  ```processing
+  void draw() {
+    ...
+    if (fram) {
+      stroke(255);
+      noFill();
+      ellipse(-15, 0, 10, 10);
+      line(-20, 0, -25, 0);
+    }
+    
+    // Tegn asteroiden
+    ellipse(ast.x, ast.y, ast.radius * 2, ast.radius * 2);
+  }
+  ```
+
+Nå kan vi se at det tegnes en sirkel `50` piksler inn i vinduet fra venstre og toppen. Den har en radius på `20` piksler eller en diameter på `40` piksler. Men asteroiden beveger seg ikke, selv om vi ga den en fart på `3` piksler til høyre per bilde og `2` piksler ned per bilde. Det er fordi vi bruker ikke farten til å endre posisjonen.
+
+Skal vi legge til kode for å flytte asteroiden inn i `draw`? Hva med når asteroiden forsvinner ut av vinduet? Her risikerer vi at det kan bli mye kode som må inn her også, men vi har jo allerede en ny fane for å putte koden til asteroiden i. Så la oss flytte opptegningskoden til asteroiden inn der sammen med oppdatering av posisjonen.
+
++ Bytt til Ateroide-fanen.
++ Lag en `draw`-metode i `Asteroide`-klassen:
+  
+  ```processing
+  class Asteroide {
+    ...
+    void draw() {
+      x += xFart;
+      y += yFart;
+      
+      ellipse(x, y, radius * 2, radius * 2);
+    }
+  }
+  ```
+  
+  Legg merke til at vi slipper å skrive `ast.` foran alle variabelnavnene. Ellers er den eneste endringen fra det vi hadde i programmets `draw` at vi oppdaterer posisjonen til asteroiden.
+  
++ Bytt til den andre fanen.
++ Bytt ut opptegningen av asteroiden med et kall på asteroidens `draw`:
+  
+  ```processing
+  void draw() {
+    ...
+    if (fram) {
+      stroke(255);
+      noFill();
+      ellipse(-15, 0, 10, 10);
+      line(-20, 0, -25, 0);
+    }
+    
+    // Tegn asteroiden
+    ast.draw();
+  }
+  ```
+
+Nå svever asteroiden gjennom rommet og forsvinner ut på høyre side av vinduet slik vi skulle forvente.
