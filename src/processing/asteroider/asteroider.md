@@ -287,7 +287,13 @@ Nå har vi sett på koden, men vi har ikke sett hva den gjør eller hvordan vi k
   
   ```processing
   void setup() {
-    ...
+    size(400, 400);
+    x = width / 2;
+    y = height / 2;
+    xFart = 0;
+    yFart = 0;
+    vinkel = -PI / 2;
+  
     ast = new Asteroide(50, 50, 3, 2, 20);
   }
   ```
@@ -296,7 +302,17 @@ Nå har vi sett på koden, men vi har ikke sett hva den gjør eller hvordan vi k
   
   ```processing
   void draw() {
-    ...
+    oppdaterSkip();
+    
+    background(0);
+    
+    translate(x, y);
+    rotate(vinkel);
+  
+    noStroke();
+    fill(255);
+    triangle(-10, -10, -10, 10, 20, 0);
+    
     if (fram) {
       stroke(255);
       noFill();
@@ -335,7 +351,17 @@ Skal vi legge til kode for å flytte asteroiden inn i `draw`? Hva med når aster
   
   ```processing
   void draw() {
-    ...
+    oppdaterSkip();
+    
+    background(0);
+    
+    translate(x, y);
+    rotate(vinkel);
+  
+    noStroke();
+    fill(255);
+    triangle(-10, -10, -10, 10, 20, 0);
+    
     if (fram) {
       stroke(255);
       noFill();
@@ -349,3 +375,74 @@ Skal vi legge til kode for å flytte asteroiden inn i `draw`? Hva med når aster
   ```
 
 Nå svever asteroiden gjennom rommet og forsvinner ut på høyre side av vinduet slik vi skulle forvente.
+
+## Utseendet og speiling
+
+Men den ser jo ikke akkurat ut som en asteroide, og den forsvinner også ut av vinduet og blir borte. Så la oss ordne dette.
+
+Den enkleste biten blir å rette opp at den ikke dukker opp på motsatt side av vinduet. Det har vi allerede kode for, så nå må vi bare finne en måte å gjenbruke den samme koden for skipet vårt og asteroidene.
+
++ Flytt koden for å finne nye koordinater ut av `oppdaterSkip`:
+  
+  ```processing
+  float beregnKoordinat(float koordinat, float fart, float lengde, float marg) {
+    koordinat += fart;
+    
+    if (koordinat < -marg) {
+      koordinat += lengde + marg * 2;
+    } else if (koordinat > lengde + marg) {
+      koordinat -= lengde + marg * 2;
+    }
+    
+    return koordinat;
+  }
+  ```
+  
+  Dette er kanskje første gangen du lager en funksjon som har en verdi som resultat. Legg merke til at istedenfor `void`, står det `float` foran navnet på funksjonen. Det betyr at denne funksjonen gir et flyttall som resultat. Det gjør at vi må ha med en retur-seting (`return koordinat;` i dette tilfellet). Det er retur-setninger som sier hva resultatet av en funksjon er. Dette er kanskje også første gang du lager en funksjon som tar imot parametere med unntak av konstruktøren du skrev tidligere. Denne tar fire stykker og alle har typen `float`. Disse kan du bruke som vanlige variabler inne i funksjonen, men de lever bare inn i funksjonen.
+
++ Ta i bruk den nye funksjonen i `oppdaterSkip`:
+  
+  ```processing
+  void oppdaterSkip() {
+    if (venstre) {
+      vinkel = beregnKoordinat(vinkel, -SNURREFART, 2 * PI, 0);
+    }
+    if (hoyre) {
+      vinkel = beregnKoordinat(vinkel, SNURREFART, 2 * PI, 0);
+    }
+    
+    if (fram) {
+      xFart += cos(vinkel) * AKSELLERASJON;
+      yFart += sin(vinkel) * AKSELLERASJON;
+      
+      float fart = sqrt(xFart * xFart + yFart * yFart);
+      if (fart > MAKS_FART) {
+        float forhold = MAKS_FART / fart;
+        xFart *= forhold;
+        yFart *= forhold;
+      }
+    }
+    
+    x = beregnKoordinat(x, xFart, width, MARG);
+    y = beregnKoordinat(y, yFart, height, MARG);
+  }
+  ```
+  
+  Oi, se der. Vi kunne til og med bruke den nye funksjonen for å beregne vinkelen til skipet. Det virker kanskje unødvendig, men det beskytter oss mot noen merkelige feil som kan opptre om man snurrer i en retning lenge nok. Disse feilene ville nok ikke skjedd før etter mange mange timer, men når vi først har lagd denne funksjonen kan vi like godt utnytte den.
+  
++ Ta i bruk den nye funksjonen for å flytte asteroiden:
+  
+  ```processing
+  class Asteroide {
+    ...
+    void draw() {
+      x = beregnKoordinat(x, xFart, width, MARG);
+      y = beregnKoordinat(y, yFart, height, MARG);
+      
+      ellipse(x, y, radius * 2, radius * 2);
+    }
+  }
+  ```
+  
+  Sånn, da oppfører skipet og asteroiden seg likt når det kommer til kantene av vinduet.
+
