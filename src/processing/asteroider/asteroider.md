@@ -6,7 +6,7 @@ author: Sigmund Hansen
 
 # Introduksjon {.intro}
 
-Dette er første del av en serie oppgaver hvor vi skal utvikle spillet Asteroider, basert på Atari-klassikeren Asteroids. I dette spillet flyr man et romskip rundt på skjermen og skyter ned asteroider. Når man skyter en asteroide, brytes den opp i flere mindre asteroider. De minste asteroidene går helt i stykker når man skyter dem. Om man blir truffet av en asteroide, dør man.
+Dette er en lengre oppgave hvor vi skal utvikle spillet Asteroider, basert på Atari-klassikeren Asteroids. I dette spillet flyr man et romskip rundt på skjermen og skyter ned asteroider. Når man skyter en asteroide, brytes den opp i flere mindre asteroider. De minste asteroidene går helt i stykker når man skyter dem. Om man blir truffet av en asteroide, dør man.
 
 Først skal vi lage et romskip som man kan fly rundt på skjermen, og når man flyr ut av skjermen på en side, dukker man opp på motsatt side av skjermen. Her vil vi ha fokus på opptegning av romskipet, håndtering av tastetrykk og å flytte skipet rundt på skjermen.
 
@@ -298,7 +298,7 @@ Nå har vi sett på koden, men vi har ikke sett hva den gjør eller hvordan vi k
   }
   ```
   
-+ Tegn opp asteroiden:
++ Fjern forflytning og rotasjon med `resetMatrix` og tegn opp asteroiden:
   
   ```processing
   void draw() {
@@ -319,6 +319,8 @@ Nå har vi sett på koden, men vi har ikke sett hva den gjør eller hvordan vi k
       ellipse(-15, 0, 10, 10);
       line(-20, 0, -25, 0);
     }
+    
+    resetMatrix();
     
     // Tegn asteroiden
     ellipse(ast.x, ast.y, ast.radius * 2, ast.radius * 2);
@@ -369,6 +371,8 @@ Skal vi legge til kode for å flytte asteroiden inn i `draw`? Hva med når aster
       line(-20, 0, -25, 0);
     }
     
+    resetMatrix();
+    
     // Tegn asteroiden
     ast.draw();
   }
@@ -376,7 +380,7 @@ Skal vi legge til kode for å flytte asteroiden inn i `draw`? Hva med når aster
 
 Nå svever asteroiden gjennom rommet og forsvinner ut på høyre side av vinduet slik vi skulle forvente.
 
-## Utseendet og speiling
+## Speiling om vinduskantene
 
 Men den ser jo ikke akkurat ut som en asteroide, og den forsvinner også ut av vinduet og blir borte. Så la oss ordne dette.
 
@@ -445,4 +449,105 @@ Den enkleste biten blir å rette opp at den ikke dukker opp på motsatt side av 
   ```
   
   Sånn, da oppfører skipet og asteroiden seg likt når det kommer til kantene av vinduet.
+
+## Utseendet til asteroiden
+
+La oss nå rette opp i utseendet til asteroiden; den er altfor jevn. For å rette opp i dette skal vi heller tegne den opp som en mangekant. Vi begynner med en regulær mangekant, og så legger vi til ekstra ujevnheter etterpå. Stegene vi så skal gjøre er da:
+
++ Sett opp fyll og omriss så det passer for opptegning av asteroiden.
++ Flytt koordinatsystemet.
++ Tegn en regulær mangekant med en løkke. Vi begynner med en tikant, men antallet kanter bør bestemmes av størrelsen til asteroiden når den opprettes.
++ Fjern endringene i koordinatsystemet.
+
+```processing
+class Asteroide {
+  ...
+  void draw() {
+    x = beregnKoordinat(x, xFart, width, MARG);
+    y = beregnKoordinat(y, yFart, height, MARG);
+    
+    noFill();
+    stroke(255);
+    
+    translate(x, y);
+    
+    beginShape();
+    for (int i = 0; i < 10; i++) {
+      vertex(radius * cos(i * PI / 5), radius * sin(i * PI / 5));
+    }
+    endShape(CLOSE);
+    
+    resetMatrix();
+  }
+}
+```
+
+Nå har du en kantete, men fortsatt nesten sirkulær asteroide. Vi trenger litt variasjon for at den skal se mer naturlig ut. Da vil vi variere vinkelen mellom hvert hjørne og avstanden fra midten av asteroiden til hjørnet. Dette må vi lagre et sted, sånn at det ikke forandrer seg hele tiden.
+
++ Lag variabler for en liste for X-koordinatene til punktene, og en for Y-koordinatene.
+  
+  ```processing
+  class Asteroide {
+    float[] punkterX;
+    float[] punkterY;
+    ...
+  }
+  ```
+
++ Lag et antall punkter basert på størrelsen til asteroiden. Flytt punktene litt vekk fra plassene langs omrisset til sirkelen.
+  
+  ```processing
+  class Asteroide {
+    ...
+    Asteroide(float x, float y, float xFart, float yFart, float radius) {
+      ...
+      int punkter = 10;
+      if (radius <= 10) {
+        punkter = 5;
+      } else if (radius <= 15) {
+        punkter = 7;
+      }
+      
+      punkterX = new float[punkter];
+      punkterY = new float[punkter];
+      for (int i = 0; i < punkter; i++) {
+        float avstand = random(0.75 * radius, 1.25 * radius);
+        float vinkel = i * 2 * PI / punkter + random(-0.5 * PI / punkter, 0.5 * PI / punkter);
+        punkterX[i] = avstand * cos(vinkel);
+        punkterY[i] = avstand * sin(vinkel);
+      }
+    }
+  }
+  ```
+
++ Endre opptegningen til å bruke disse punktene istedenfor å tegne en helt regulær mangekant.
+  
+  ```processing
+  class Asteroide {
+    ...
+    void draw() {
+      x = beregnKoordinat(x, xFart, width, MARG);
+      y = beregnKoordinat(y, yFart, height, MARG);
+      
+      noFill();
+      stroke(255);
+      
+      translate(x, y);
+      
+      beginShape();
+      for (int i = 0; i < punkterX.length; i++) {
+        vertex(punkterX[i], punkterY[i]); // Bare denne linjen er endret
+      }
+      endShape(CLOSE);
+      
+      resetMatrix();
+    }
+  }
+  ```
+
++ Prøv ut forskjellige størrelser på asteroiden og se om du vil gjøre noen endringer i hvordan asteroidene skal se ut.
+  
+  + Bør antall punkter være annerledes?
+  + Er det nok variasjon i avstanden fra sentrum, eller er det for mye?
+  + Hva med vinklene mellom hvert hjørne?
 
