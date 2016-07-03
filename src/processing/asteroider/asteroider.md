@@ -551,3 +551,73 @@ Nå har du en kantete, men fortsatt nesten sirkulær asteroide. Vi trenger litt 
   + Er det nok variasjon i avstanden fra sentrum, eller er det for mye?
   + Hva med vinklene mellom hvert hjørne?
 
++ Det ser litt rart ut når asteroiden ikke snurrer.
+  
+  + Legg til en variabel for vinkelen til asteroiden.
+  + Legg til en variabel for hvor fort asteroiden skal snurre.
+  + Sett en tilfeldige snurrefart for asteroiden i konstruktøren, for eksempel mellom `-SNURREFART` og `SNURREFART`.
+  + Oppdater vinkelen i `draw` og roter asteroiden på samme måte som ble gjort for skipet.
+
+## Flere asteroider
+
+En enslig asteroide er jo ikke særlig spennende. Det blir jo altfor lett om spilleren bare skal skyte den ene. Så vi trenger å lage en liste med asteroider som skal brukes, og så tegne opp alle sammen.
+
++ Bytt ut den enslige asteroiden med en liste (fjern linjen: `Asteroide ast;`):
+  
+  ```processing
+  Asteroide[] asteroider;
+  ```
+  
++ Lag noen flere asteroider:
+  
+  ```processing
+  void setup() {
+    size(400, 400);
+    x = width / 2;
+    y = height / 2;
+    xFart = 0;
+    yFart = 0;
+    vinkel = -PI / 2;
+    
+    asteroider = new Asteroide[3];
+    for (int i = 0; i < asteroider.length; i++) {
+      float retning = random(0, 2 * PI);
+      float fart = random(MAKS_FART);
+      asteroider[i] = new Asteroide(random(width), random(height), fart * cos(retning), fart * sin(retning), 20);
+    }
+  }
+  ```
+  
++ Tegn opp asteroidene:
+  
+  ```processing
+  void draw() {
+    oppdaterSkip();
+    
+    background(0);
+    
+    translate(x, y);
+    rotate(vinkel);
+  
+    noStroke();
+    fill(255);
+    triangle(-10, -10, -10, 10, 20, 0);
+    
+    if (fram) {
+      stroke(255);
+      noFill();
+      ellipse(-15, 0, 10, 10);
+      line(-20, 0, -25, 0);
+    }
+    
+    resetMatrix();
+    
+    // Tegn asteroidene
+    for (Asteroide ast : asteroider) {
+      ast.draw();
+    }
+  }
+  ```
+  
+  Her ser vi en annen variant av en for-løkke, som kan brukes i visse tilfeller. Man kan ikke bruke denne varianten hvis man skal bruke flere lister eller endre på innholdet i listen. Hvis man bare skal lese innholdt i listene, fungerer denne varianten og er litt enklere å skrive.
+
