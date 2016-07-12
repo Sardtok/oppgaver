@@ -16,7 +16,7 @@ Til slutt skal vi legge en avsluttende hånd på verket. Poeng og liv skal vises
 
 Det vil fortsatt være en del rom for forbedringer som man kan legge til. Lagring av rekorder, UFOer som skyter på spilleren som i klassikeren og å bruke bildefiler til grafikken isteden.
 
-# Skipet - Opptegning
+# Skipet - Opptegning {.activity}
 
 La oss først se på hvilke egenskaper skipet skal ha. Det må i hvert fall ha en posisjon, så vi trenger et par variabler for dette *x* og *y*. Det skal også kunne snu seg rundt og fly i enhver retning på skjermen, så vi må vite hastigheten og hvilken vei skipet peker. Jeg velger her å kalle retningen for vinkel, men du kan gjerne kalle det retning. Bare vær bevisst på at det er hvilken retning skipet peker, og ikke hvilken vei det beveger seg.
 
@@ -59,7 +59,7 @@ La oss ta en rask titt på de tre siste setningene i `draw`. Den første, `trans
 
 Rekkefølgen man utfører operasjoner som `translate`, `rotate` og `scale` påvirker hva som skjer. Hver gang man kaller en av disse funksjonene, endres utgangspunktet og det neste funksjonskallet vil bruke det nye utgangspunktet. Det finnes funksjoner for å lagre dette utgangspunktet, men det finnes noen begrensninger. Man kan bare lagre 32 slike tilstander, og man må passe på at man ikke lar lagrede tilstander bli liggende. Dette innebærer vanligvis at man lagrer rett før man tegner opp noe, endrer det, tegner opp og går tilbake til tilstanden man lagret før opptegningen. Vi skal se på dette når vi legger inn asteroidene.
 
-# Skipet - Styring
+# Skipet - Styring {.activity}
 
 Før du fortsetter med styringen, kan det være lurt å justere tilbake variablene du endret for å teste opptegningen.
 
@@ -104,7 +104,7 @@ void keyReleased() {
 }
 ```
 
-## Snu skipet
+## Snu skipet {.check}
 
 Nå har vi kontroll på hvilke taster som er i trykket inn, men vi mangler fortsatt å oppdatere romskipet slik at det flyr rundt på skjermen. La oss begynne med å få romskipet til å snurre rundt. Vi legger til en variabel for hvor fort romskipet skal snu når man styrer til venstre eller høyre. Fordi denne verdien ikke skal endre seg mens spillet kjører, setter vi den til å være `final` og gir den et navn med store bokstaver. Slike variabler kalles gjerne konstanter siden de ikke kan endres mens programmet kjører.
 
@@ -132,7 +132,7 @@ void draw() {
 }
 ```
 
-## Fly
+## Fly {.check}
 
 Nå har vi et romskip som kan snu seg rundt i en hastighet på ca. 180 grader per sekund. Da kan vi fortsette med å fly framover. Dette innebærer en liten liste med ting som må gjøres:
 
@@ -239,7 +239,7 @@ void draw() {
 
 Merk at siden vi slår av fylling av former som tegnes opp, og endrer linjefargen til hvit når vi tegner opp flammen, så må vi sette fyllfargen tilbake til hvit og slå av opptegning av omrisset.
 
-# Asteroider
+# Asteroider {.activity}
 
 Nå som vi har et romskip vi kan fly rundt, er det på tide å få lagt inn noen asteroider som vi kan skyte på. Vi vil ha flere enn en, så vi må bruke lister av noe slag til å holde rede på disse asteroidene. For å holde koden ryddig skal vi også bruke en klasse for asteroidene som vi legger i en egen fane. Klasser lar oss samle data og funksjonalitet som hører sammen i en egen atskilt del. De lar oss også lage flere eksemplarer av ting som har samme type data og oppfører seg på samme måte; disse eksemplarene kalles objekter.
 
@@ -298,7 +298,7 @@ Nå har vi sett på koden, men vi har ikke sett hva den gjør eller hvordan vi k
   }
   ```
   
-+ Fjern forflytning og rotasjon med `resetMatrix` og tegn opp asteroiden:
++ Nullstill forflytning og rotasjon med `resetMatrix` og tegn opp asteroiden:
   
   ```processing
   void draw() {
@@ -457,7 +457,7 @@ La oss nå rette opp i utseendet til asteroiden; den er altfor jevn. For å rett
 + Sett opp fyll og omriss så det passer for opptegning av asteroiden.
 + Flytt koordinatsystemet.
 + Tegn en regulær mangekant med en løkke. Vi begynner med en tikant, men antallet kanter bør bestemmes av størrelsen til asteroiden når den opprettes.
-+ Fjern endringene i koordinatsystemet.
++ Nullstill koordinatsystemet med `resetMatrix`.
 
 ```processing
 class Asteroide {
@@ -618,6 +618,178 @@ En enslig asteroide er jo ikke særlig spennende. Det blir jo altfor lett om spi
     }
   }
   ```
+
+### For-each {.pro-tip}
+
+Her ser vi en annen variant av en for-løkke, som kan brukes i visse tilfeller. Man kan ikke bruke denne varianten hvis man skal bruke flere lister eller endre på innholdet i listen. Hvis man bare skal lese innholdt i listene, fungerer denne varianten og er litt enklere å skrive. Løkken som er brukt over, tilsvarer den følgende løkken:
+
+```processing
+for (int i = 0; i < asteroider.length; i++) {
+  Asteroide ast = asteroider[i];
+  ast.draw();
+}
+```
+
+Denne typen løkker kan brukes med andre typer datastrukturer også, så det gjør ting enklere ved at man bruker det likt uansett. Ordet datastrukterer brukes om alle ting som lar oss organisere mengder med data. Dette kan være lister, men også andre strukturer kalt mengder, trær, grafer, køer og liknende. Skal man jobbe med disse kan man nesten alltid bruke en løkke som den over, for å gjøre noe arbeid med alle dataene organisert i strukturen.
+
+# PANG PANG! {.activity}
+
+Men dette er ikke et spill helt ennå. Det finnes ikke noe mål. Vi skulle jo kunne skyte asteroidene, og om de krasjet i skipet, skulle jo det gå i stykker.
+
+## Kuleregn {.check}
+
+Akkurat som asteroidene, vil vi nå lage en ny klasse for kuler. Den skal fly et stykke framover før den forsvinner, og spilleren kan kun skyte et lite antall kuler, la oss si tre. Hvis det er skutt tre kuler, må spilleren vente til den første kulen er borte før de kan skyte på nytt.
+
++ Lag en ny fane for Kule-klassen.
++ Kuler har en posisjon og en retning i tillegg til en begrenset levetid. Vi tar også med hastighet, selv om denne kunne vært regnet ut ved hjelp av vinkelen.
   
-  Her ser vi en annen variant av en for-løkke, som kan brukes i visse tilfeller. Man kan ikke bruke denne varianten hvis man skal bruke flere lister eller endre på innholdet i listen. Hvis man bare skal lese innholdt i listene, fungerer denne varianten og er litt enklere å skrive.
+  ```processing
+  class Kule {
+    float x;
+    float y;
+    float xFart;
+    float yFart;
+    float vinkel;
+    int levetid;
+  }
+  ```
+
++ Spilleren må kunne avfyre kuler. Dette kunne vært gjort ved å lage nye kuler hver gang. Isteden lager vi alle kulene når spillet starter, og så setter vi variablene når de avfyres. Levetiden brukes til å holde rede på om de skal tegnes og om de kan skade asteroider.
+  
+  ```processing
+  class Kule {
+    ...
+    
+    void avfyr(float x, float y, float vinkel) {
+      this.x = x;
+      this.y = y;
+      this.vinkel = vinkel;
+      
+      xFart = 5 * cos(vinkel);
+      yFart = 5 * sin(vinkel);
+      levetid = 60;
+    }
+  }
+  ```
+
++ Kulen tegnes som en enkel strek, som stikker litt ut bak og litt ut foran midten. Vi må også telle ned levetiden og ikke gjøre noe når kulens levetid har gått ut. Sist, men ikke minst, må vi oppdatere posisjonen til kulen.
+  
+  ```processing
+  class Kule {
+    ...
+    
+    void draw() {
+      if (levetid <= 0) {
+        return;
+      }
+      
+      levetid--;
+      
+      x = beregnKoordinat(x, xFart, width, MARG);
+      y = beregnKoordinat(y, yFart, height, MARG);
+      
+      translate(x, y);
+      rotate(vinkel);
+      
+      line(-3, 0, 3, 0);
+      
+      resetMatrix();
+    }
+  }
+  ```
+
++ Vi må legge til noen kuler i spillet og en variabel for å telle ned hvor lenge det er til neste gang vi kan skyte, sånn at det blir et lite mellomrom mellom hver kule.
+  
+  ```processing
+  Kule[] kuler = new Kule[3];
+  int skyteNedtelling;
+  
+  void setup() {
+    ...
+    
+    for (int i = 0; i < kuler.length; i++) {
+      kuler[i] = new Kule();
+    }
+  }
+  ```
+
++ Når spilleren trykker på skyteknappen, må det avfyres en kule hvis det er lenge nok siden forrige skudd, og det ikke er tre kuler på skjermen fra før. Til slutt i `draw`, må vi også tegne opp kulene.
+  
+  ```processing
+  void draw() {
+    oppdaterSkip();
+    
+    skyteNedtelling--;
+    if (skyt && skyteNedtelling <= 0) {
+      for (Kule kule : kuler) {
+        if (kule.levetid <= 0) {
+          kule.avfyr(x, y, vinkel);
+          skyteNedtelling = 15;
+          break;
+        }
+      }
+    }
+    
+    background(0);
+    
+    translate(x, y);
+    rotate(vinkel);
+  
+    noStroke();
+    fill(255);
+    triangle(-10, -10, -10, 10, 20, 0);
+    
+    if (fram) {
+      stroke(255);
+      noFill();
+      ellipse(-15, 0, 10, 10);
+      line(-20, 0, -25, 0);
+    }
+    
+    resetMatrix();
+    
+    // Tegn asteroidene
+    for (Asteroide ast : asteroider) {
+      ast.draw();
+    }
+    
+    for (Kule kule : kuler) {
+      kule.draw();
+    }
+  }
+  ```
+  
+  Her er det lagt inn to nye løkker. En rett etter kallet på `oppdaterSkip`. I denne løkken har vi brukt `break` til å avslutte løkken når vi har funnet en kule å avfyre. `break` stopper løkken fra å kjøre videre. Den andre løkken er en enkel opptegningsløkke helt til slutt i funksjonen.
+
+# Finpussen {.activity}
+
+## Nytt spill {.check}
+
+Når spilleren taper, må de få lov å starte et nytt spill. Det hadde også vært fint om spillet ikke begynte med en gang, men ventet til spilleren ba om det. Så la oss få på plass en start-skjerm som vises til spilleren er klar.
+
+## Flere brett {.check}
+
+Det er litt kjedelig når man ikke kommer videre etter at man har skutt i stykker alle asteroidene. Vi har allerede fått på plass at spillet ikke starter når `setup` blir kjørt, så la oss bygge videre på dette sånn at vi kan starte nye brett når ett er over.
+
+## Rekordtavle {.check}
+
+Nå som man kan spille og samle opp masse poeng, er det litt trist at ingen kan se hvor god man har vært etterpå. Derfor skal vi lagre de ti beste resultatene og vise dem til spillerne. Hvis man får nok poeng til å være blant de ti beste, får man skrive inn navnet sitt som så vises på rekordtavlen.
+
+# Videreutvikling {.activity}
+
+Nå er spillet ganske komplett, men det finnes alltid rom for å utvide ting og her er noen ideer til hva du kan gjøre videre om du har lyst til å gjøre mer med spillet.
+
++ Fiender
+  
+  Noen steiner som flyter rundt i verdensrommet kan ikke akkurat kalles fiender. De er hindre som man må overkomme, men vi kan gjøre enda mer. Ataris klassiker *Asteroids* hadde romskip (flyvende tallerkener) som kom flyvende over skjermen og skøyt etter spilleren. Hvis man skøyt ned disse, fikk man masse bonuspoeng. De kom i to utgaver, en stor og en liten. Den store var ganske enkel å skyte ned og siktet dårlig. Den lille var raskere, vanskeligere å treffe fordi den var liten, og siktet mer nøyaktig mot der spilleren kom til å være om de ikke skiftet kurs.
+  
+  Du trenger ikke å lage akkurat de samme typene romskip som fantes i originalen, men du kan legge til fiender som prøver å angripe spilleren som man får mer poeng for å skyte ned enn asteroidene.
+
++ Grafikk
+  
+  Her har vi vært ganske tro mot originalen, og lagd et spill som ser nesten helt likt ut. Grafikken er derfor ganske enkel. Trekanter, streker og mangekanter. Det ville sett mer imponerende ut med noe litt stiligere. Du kan tegne bilder som du kan bruke istedenfor, eller lage mer detaljerte tegninger ved å bruke farger og flere mangekanter. Det finnes utrolig mange muligheter for hva du kan gjøre med grafikken.
+
++ Flere spillere
+  
+  Det er morsommere å spille sammen. Kan du gjøre om spillet til å fungere for to spillere?
 
