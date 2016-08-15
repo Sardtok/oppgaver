@@ -332,7 +332,7 @@ Nå kan vi se at det tegnes en sirkel `50` piksler inn i vinduet fra venstre og 
 Skal vi legge til kode for å flytte asteroiden inn i `draw`? Hva med når asteroiden forsvinner ut av vinduet? Her risikerer vi at det kan bli mye kode som må inn her også, men vi har jo allerede en ny fane for å putte koden til asteroiden i. Så la oss flytte opptegningskoden til asteroiden inn der sammen med oppdatering av posisjonen.
 
 + Bytt til Ateroide-fanen.
-+ Lag en `draw`-metode i `Asteroide`-klassen:
++ Lag en `draw`-funksjon i `Asteroide`-klassen:
   
   ```processing
   class Asteroide {
@@ -619,7 +619,7 @@ En enslig asteroide er jo ikke særlig spennende. Det blir jo altfor lett om spi
   }
   ```
 
-### For-each {.pro-tip}
+### For-each {.protip}
 
 Her ser vi en annen variant av en for-løkke, som kan brukes i visse tilfeller. Man kan ikke bruke denne varianten hvis man skal bruke flere lister eller endre på innholdet i listen. Hvis man bare skal lese innholdt i listene, fungerer denne varianten og er litt enklere å skrive. Løkken som er brukt over, tilsvarer den følgende løkken:
 
@@ -688,6 +688,8 @@ Akkurat som asteroidene, vil vi nå lage en ny klasse for kuler. Den skal fly et
       x = beregnKoordinat(x, xFart, width, MARG);
       y = beregnKoordinat(y, yFart, height, MARG);
       
+      stroke(255);
+      
       translate(x, y);
       rotate(vinkel);
       
@@ -705,7 +707,19 @@ Akkurat som asteroidene, vil vi nå lage en ny klasse for kuler. Den skal fly et
   int skyteNedtelling;
   
   void setup() {
-    ...
+    size(400, 400);
+    x = width / 2;
+    y = height / 2;
+    xFart = 0;
+    yFart = 0;
+    vinkel = -PI / 2;
+    
+    asteroider = new Asteroide[3];
+    for (int i = 0; i < asteroider.length; i++) {
+      float retning = random(0, 2 * PI);
+      float fart = random(MAKS_FART);
+      asteroider[i] = new Asteroide(random(width), random(height), fart * cos(retning), fart * sin(retning), 20);
+    }
     
     for (int i = 0; i < kuler.length; i++) {
       kuler[i] = new Kule();
@@ -713,11 +727,28 @@ Akkurat som asteroidene, vil vi nå lage en ny klasse for kuler. Den skal fly et
   }
   ```
 
-+ Når spilleren trykker på skyteknappen, må det avfyres en kule hvis det er lenge nok siden forrige skudd, og det ikke er tre kuler på skjermen fra før. Til slutt i `draw`, må vi også tegne opp kulene.
++ Når spilleren trykker på skyteknappen, må det avfyres en kule hvis det er lenge nok siden forrige skudd, og det ikke er tre kuler på skjermen fra før.
   
   ```processing
-  void draw() {
-    oppdaterSkip();
+  void oppdaterSkip() {
+    if (venstre) {
+      vinkel = beregnKoordinat(vinkel, -SNURREFART, 2 * PI, 0);
+    }
+    if (hoyre) {
+      vinkel = beregnKoordinat(vinkel, SNURREFART, 2 * PI, 0);
+    }
+    
+    if (fram) {
+      xFart += cos(vinkel) * AKSELLERASJON;
+      yFart += sin(vinkel) * AKSELLERASJON;
+  
+      float fart = sqrt(xFart * xFart + yFart * yFart);
+      if (fart > MAKS_FART) {
+        float forhold = MAKS_FART / fart;
+        xFart *= forhold;
+        yFart *= forhold;
+      }
+    }
     
     skyteNedtelling--;
     if (skyt && skyteNedtelling <= 0) {
@@ -729,6 +760,19 @@ Akkurat som asteroidene, vil vi nå lage en ny klasse for kuler. Den skal fly et
         }
       }
     }
+    
+    x = beregnKoordinat(x, xFart, width, MARG);
+    y = beregnKoordinat(y, yFart, height, MARG);
+  }
+  ```
+  
+  Her er det lagt inn en ny løkke mot slutten av `oppdaterSkip`. I denne løkken har vi brukt `break` til å avslutte løkken når vi har funnet en kule å avfyre. `break` stopper løkken fra å kjøre videre.
+
++ Til slutt i `draw`, må vi også tegne opp kulene.
+  
+  ```processing
+  void draw() {
+    oppdaterSkip();
     
     background(0);
     
@@ -748,18 +792,334 @@ Akkurat som asteroidene, vil vi nå lage en ny klasse for kuler. Den skal fly et
     
     resetMatrix();
     
+    // Tegn kulene
+    for (Kule kule : kuler) {
+      kule.draw();
+    }
+    
     // Tegn asteroidene
     for (Asteroide ast : asteroider) {
       ast.draw();
     }
+  }
+  ```
+
+## Krasj-bom-bang {.check}
+
+Nå som det regner kuler over hele skjermen, er det på tide at det skjer noe når en kule treffer en asteroide. Å sjekke om to objekter i et spill kolliderer eller overlapper, kalles kollisjonssjekking. Det finnes mange måter å sjekke kollisjoner på, som tar utgangspunkt i forskjellige geometriske egenskaper. Firkanter som ikke er rotert er det enkleste å sjekke. Sirkler er også veldig lett siden vi da bare kan basere oss på avstanden mellom sirklene. Andre geometriske former blir noe mer komplisert.
+
+Så her må vi ta et valg, skal kollisjonssjekkingen være nøyaktig eller er det nok å sjekke for sirkler? For kuler holder sirkelmetoden. Hvis vi skal bruke den samme metoden for skipet, bør vi bruke to eller tre små sirkler. Ellers kan det bli mange kollisjoner der det ikke er noen, altså at skipet ikke er borti en asteroide, men eksploderer likevel. Her kommer vi bare til å bruke sirkelkollisjoner for begge deler, men om du vil ha en mer nøyaktig kollisjonssjekk kan du lese om: **TODO: sett inn algoritme for konvekse polygoner her, kontroller at artikkelen har med triangulering eller andre konvekseringsteknikker for konkave asteroider**.
+
+La oss først håndtere at skudd treffer asteroider. Her må vi gjøre flere ting, sjekke om det er en kollisjon. Om et skudd treffer en asteroide, må asteroiden gå i stykker. Da deles den i to om den er stor, eller forsvinner om den er liten. Skuddet må også forsvinne.
+
++ Sjekk etter kollisjon og fjern skuddet ved å sette levetiden til `0` hvis det skjer:
+  
+  ```processing
+  class Asteroide {
+    ...
+    void draw() {
+      if (levetid <= 0) {
+        return;
+      }
+      
+      levetid--;
+      
+      x = beregnKoordinat(x, xFart, width, MARG);
+      y = beregnKoordinat(y, yFart, height, MARG);
+      
+      // Kollisjonssjekking etter at alle ting er flyttet
+      for (Kule k : kuler) {
+        if (kollidererMed(k)) {
+          k.levetid = 0;
+          // Her må vi legge til at asteroiden skal bli ødelagt
+          // Vi har en del utfordringer å ta hensyn til før vi kan gjøre dette
+          return;
+        }
+      }
+      
+      stroke(255);
+      
+      translate(x, y);
+      rotate(vinkel);
+      
+      line(-3, 0, 3, 0);
+      
+      resetMatrix();
+    }
     
-    for (Kule kule : kuler) {
-      kule.draw();
+    boolean kollidererMed(Kule k) {
+      if (k.levetid <= 0) {
+        return false;
+      }
+      
+      float avstandX = k.x - x;
+      float avstandY = k.y - y;
+      float kvadratiskAvstand = avstandX * avstandX + avstandY * avstandY;
+      float maksAvstand = radius + 3;
+      
+      return kvadratiskAvstand < (maksAvstand * maksAvstand);
     }
   }
   ```
   
-  Her er det lagt inn to nye løkker. En rett etter kallet på `oppdaterSkip`. I denne løkken har vi brukt `break` til å avslutte løkken når vi har funnet en kule å avfyre. `break` stopper løkken fra å kjøre videre. Den andre løkken er en enkel opptegningsløkke helt til slutt i funksjonen.
+  Nå lurer du kanskje på hvordan `kollidererMed` fungerer. Hvis kulens levetid har løpt ut, kan ingenting kollidere med den, så da returnerer vi `false` (usann) uten å gjøre noen beregninger. Så bruker vi Pytagoras' læresetning for å bestemme om kulen og asteroiden kolliderer. Vi bruker avstandene langs X- og Y-aksene som katetene i en rettvinklet trekant. Så beregner vi kvadratet til hypotenusen, altså kvadratet av avstanden mellom kulen og asteroiden. Så legger vi sammen radiene til kulen og asteroiden, hvis de to er nærmere hverandre enn dette, da kolliderer de. Til slutt kunne vi gjort en av to ting, vi kunne regnet ut kvadratroten av `kvadratiskAvstand` og sammenliknet det med `maksAvstand`, eller vi kunne regnet ut kvadratet av `maksAvstand` og sammenliknet det med `kvadratiskAvstand`. Å regne ut kvadratroten av noe tar lengre tid for maskinen enn å regne ut kvadratet av noe, så når vi kan velge, velger vi heller det siste. Valget har lite å si i et lite spill som dette, men om det var tusenvis av skudd og asteroider, ville det hatt stor betydning.
+
+  Den siste setningen `return kvadratiskAvstand < (maksAvstand * maksAvstand)` virker kanskje uvant, men en liknende `return` har du sett i `beregnKoordinat`. Her sammenlikner vi to tall. Resultatet er enten sant eller usant, og denne funksjonen returnerer nettopp en boolsk verdi. Vi regner også ut kvadratet av `maksAvstand` siden det er det vi skal sammenlikne med. For at det skal bli tydelig er det satt parenteser rundt regnestykket, men det er ikke påkrevd. 
+
++ Når en stor eller middels stor asteroide blir ødelagt, skal den deles i to mindre asteroider. Når en asteroide blir borte, og to nye oppstår, trenger vi plass til en ekstra asteroide. Et problem er at den typen liste vi har brukt, en *array*, har en fast størrelse. Da finnes det en del forskjellige alternativer: bruk en annen type liste som kan vokse, skriv kode for å utvide listen selv eller bruke ferdige funksjoner i Processing for å utvide listen. Vi skal her gå for det første alternativet. Bytt ut listetypen:
+  
+  ```processing
+  ArrayList<Asteroide> asteroider; // ArrayList istedenfor en array
+  ...
+  void setup() {
+    size(400, 400);
+    x = width / 2;
+    y = height / 2;
+    xFart = 0;
+    yFart = 0;
+    vinkel = -PI / 2;
+    
+    asteroider = new ArrayList<Asteroide>(); // Oppretting av denne typen lister ser litt annerledes ut
+    for (int i = 0; i < 3; i++) {
+      float retning = random(0, 2 * PI);
+      float fart = random(MAKS_FART);
+      
+      // Innsetting er også litt annerledes
+      asteroider.add(new Asteroide(random(width), random(height), fart * cos(retning), fart * sin(retning), 20));
+    }
+    
+    for (int i = 0; i < kuler.length; i++) {
+      kuler[i] = new Kule();
+    }
+  }
+  ```
+  
+  Over er det fire linjer som har blitt endret. Den første når variabelen deklareres har en annen type enn tidligere `ArrayList<Asteroide>`. `ArrayList` er en liste som bruker en *array* til å putte elementene i, men håndterer endringer i antall elementer og fjerning på en effektiv måte. Den neste er opprettelsen av listen inne i `setup` rett før løkken som fyller listen. Denne setningen er nesten lik som når vi oppretter asteroider eller kuler. Så har vi endret antall ganger løkken skal kjøre, sånn at den ikke er avhengig av listen når vi lager asteroidene første gang. Til slutt er setningen som legger til asteroidene i listen endret: nå bruker vi `ArrayList.add` istedenfor.
+  
+  Hvis du tester å kjøre programmet, skal alt fungere akkurat som før.
+
++ Nå må vi endre på inneholdet i listen hvis en asteroide blir skutt i stykker. Det må gjøres i to steg. Vi kan ikke legge til elementer i listen mens vi løper gjennom den, altså inne i for-løkken i `draw`. Så vi må gjøre noen endringer. Først legger vi til følgende `import`-setning helt først i programmet:
+  
+  ```processing
+  import java.util.Iterator;
+  ```
+  
+  Denne gir oss tilgang til `Iterator`-klassen som er det som brukes til for-each-løkker som løper gjennom andre datastrukturer enn *arrayer*. Det neste steget er å få `Asteroide.draw` til å gi beskjed når asteroiden blir ødelagt, så vi endrer `draw` til å returnere en boolsk verdi:
+  
+  ```processing
+  class Asteroide {
+    ...
+    boolean draw() {
+      x = beregnKoordinat(x, xFart, width, MARG);
+      y = beregnKoordinat(y, yFart, height, MARG);
+      vinkel = beregnKoordinat(vinkel, vinkelFart, 2 * PI, 0);
+      
+      // Kollisjonssjekking etter at alle ting er flyttet
+      for (Kule k : kuler) {
+        if (kollidererMed(k)) {
+          k.levetid = 0;
+          return true;
+        }
+      }
+      
+      noFill();
+      stroke(255);
+      
+      translate(x, y);
+      rotate(vinkel);
+      
+      beginShape();
+      for (int i = 0; i < punkterX.length; i++) {
+        vertex(punkterX[i], punkterY[i]); // Bare denne linjen er endret
+      }
+      endShape(CLOSE);
+      
+      resetMatrix();
+      
+      return false;
+    }
+    ...
+  }
+  ```
+  
+  Så må vi endre på løkken som tegner opp asteroidene, sånn at vi kan fjerne asteroiden:
+  
+  ```processing
+  void draw() {
+    oppdaterSkip();
+    
+    background(0);
+    
+    translate(x, y);
+    rotate(vinkel);
+  
+    noStroke();
+    fill(255);
+    triangle(-10, -10, -10, 10, 20, 0);
+    
+    if (fram) {
+      stroke(255);
+      noFill();
+      ellipse(-15, 0, 10, 10);
+      line(-20, 0, -25, 0);
+    }
+    
+    resetMatrix();
+    
+    // Tegn kulene
+    for (Kule kule : kuler) {
+      kule.draw();
+    }
+    
+    // Tegn asteroidene
+    Iterator<Asteroide> it = asteroider.iterator();
+    while (it.hasNext()) {
+      Asteroide ast = it.next();
+      if (ast.draw()) {
+        it.remove();
+      }
+    }
+  }
+  ```
+  
+  Hvis du kjører spillet nå, vil du se at asteroiden og kulen forsvinner når du skyter en asteroide. Her har vi et par ting som du kanskje ikke har sett før: `for`-løkken er byttet ut med en `while`-løkke og vi har tatt i bruk iteratoren. Begge disse er derfor forklart i boksene under.
+  
+### While {.protip}
+
+Denne typen løkker, er enda litt enklere enn `for`-løkker, i hvert fall på noen måter. Akkurat som den enkle `for`-løkken, gjør den en sjekk for om den skal kjøre, eller om den er ferdig. Denne sjekken kalles en betingelse og løkken blir noen ganger kalt en betingelsesløkke. I motsetning til en `for`-løkke har den ikke en initieringssetning eller en oppdateringssetning som en del av strukturen. Derfor kan `for`-løkken sees på som en utvidelse av `while`-løkken, der den ene setningen settes foran løkken og den andre til slutt i løkken. Det er ikke en helt nøyaktig tilnærming, men passer ganske godt. Siden det ikke finnes en initieringssetning, må all forberedelse gjøres før løkken. Og siden det ikke finnes en oppdateringssetning, må man passe på at tilstanden endrer seg inne i løkken for at løkken skal kunne ta slutt. De to løkkene under gjør det samme, men i noen tilfeller egner den ene seg bedre enn den andre.
+
+```processing
+for (int i = 0; i < 10; i++) {
+  sum += i;
+}
+```
+
+```processing
+int i = 0;
+while (i < 10) {
+  sum += 10;
+  i++;
+}
+```
+
+Et annet eksempel er som det vi hadde tidligere. De to følgende løkkene er like, men om du skal fjerne elementer i listen må du bruke en `while`- eller vanlig `for`-løkke (ikke en `for-each` som under, men en `for` som den i forrige eksempel).
+
+```processing
+for (Type t : liste) {
+  t.gjoerNoe();
+}
+```
+
+```processing
+Iterator<Type> it = liste.iterator();
+while (it.hasNext()) {
+  Type t = it.next();
+  t.gjoerNoe();
+}
+```
+
+Som du ser må du ofte skrive en eller to setninger ekstra for å bruke en `while`-løkke, men av og til er det enklere enn å bruke `for`. For eksempel løkken under:
+
+```processing
+Iterator<Type> it = liste.iterator();
+while (it.hasNext()) {
+  Type t = it.next();
+  if (t.skalSlettes()) {
+    it.remove();
+  }
+}
+```
+
+```processing
+for (Iterator<Type> it = liste.iterator(); it.hasNext();) {
+  Type t = it.next();
+  if (t.skalSlettes()) {
+    it.remove();
+  }
+}
+```
+
+Her er forskjellen mellom de to løkkene ganske liten, men man bruker en litt spesiell egenskap ved `for`-løkken: en eller flere av setningene i parentesene kan stå tom. Her har oppdateringssetningen blitt utelatt, for `it.next()` må kalles i begynnelsen av løkken, og ikke i slutten.
+
+### Iterator {.protip}
+
+En iterator lar deg løpe gjennom elementene i en datastruktur, som f.eks. en liste. Den har tre metoder du kan kalle: `hasNext`, `next` og `remove`. `hasNext` returnerer `true` hvis `next` kommer til å returnere noe. Hvis `hasNext` returnerer `false` vil det skje en feil om man kaller `next`. `next` henter ut det neste elementet i datastrukturen og oppdaterer noe tilstand inne i iteratoren slik at neste kall på `hasNext` og `next` vil fungere som forventet. Altså, et kall på `next` henter neste element fra datastrukturen, og flytter seg et hakk fram i datastrukturen, slik at hvis det er flere elementer igjen vil neste kall på `next` få ut dette. Dette gjør at disse to metodene sammen fungerer bra for å lage en `while`-løkke som løper gjennom en liste eller annen datastruktur. Den siste metoden `remove`, fjerner det elementet som sist ble hentet med `next`, fra datastrukturen. Det går ikke å kalle `remove` uten at `next` har blitt kalt siden forrige `remove` eller siden opprettelsen av iteratoren.
+
+Du lurer kanskje på hvorfor man ikke kan legge til elementer med en iterator når man kan fjerne elementer. Faktisk finnes det noen typer iteratorer som tillater at man legger til elementer i datastrukturen også, eller at man beveger seg gjennom datastrukturen i en annen rekkefølge. Disse dekkes ikke her, men om du er interessert i dette kan du ta en titt på f.eks. **TODO Link this** `ListIterator`.
+
+##
+
++ Nå må vi legge til nye asteroider hvis asteroiden som ble ødelagt er stor nok. For dette skal vi bruke en ekstra liste med asteroider. Legg følgende til før `setup`:
+  
+  ```processing
+  ArrayList<Aseroide> nyeAsteroider = new ArrayList<Asteroide>();
+  ```
+
++ Når en asteroide eksploderer, så legger vi til to nye asteroider hvis asteroiden var stor eller middels stor:
+  
+  ```processing
+  void draw() {
+    oppdaterSkip();
+    
+    background(0);
+    
+    translate(x, y);
+    rotate(vinkel);
+  
+    noStroke();
+    fill(255);
+    triangle(-10, -10, -10, 10, 20, 0);
+    
+    if (fram) {
+      stroke(255);
+      noFill();
+      ellipse(-15, 0, 10, 10);
+      line(-20, 0, -25, 0);
+    }
+    
+    resetMatrix();
+    
+    // Tegn kulene
+    for (Kule kule : kuler) {
+      kule.draw();
+    }
+    
+    // Tegn asteroidene
+    Iterator<Asteroide> it = asteroider.iterator();
+    while (it.hasNext()) {
+      Asteroide ast = it.next();
+      if (ast.draw()) {
+        it.remove();
+        
+        if (ast.radius >= 10) {
+          float retning = random(0, 2 * PI);
+          float fart = random(MAKS_FART);
+          Asteroide nyAsteroide = new Asteroide(ast.x, ast.y, fart * cos(retning), fart * sin(retning), ast.radius / 2.0);
+          nyAsteroide.draw();
+          nyeAsteroider.add(nyAsteroide);
+          
+          retning = retning + PI;
+          nyAsteroide = new Asteroide(ast.x, ast.y, fart * cos(retning), fart * sin(retning), ast.radius / 2.0);
+          nyAsteroide.draw();
+          nyeAsteroider.add(nyAsteroide);
+        }
+      }
+    }
+    
+    if (!nyeAsteroider.isEmpty()) {
+      asteroider.addAll(nyeAsteroider);
+      nyeAsteroider.clear();
+    }
+  }
+  ```
+  
+  Så etter at vi har fjernet den nettopp sprengte asteroiden, sjekker vi om den er stor nok og hvis den er det så lager vi to nye asteroider som flyr i motsatt retning av hverandre i samme hastighet. Legg merke til at vi tegner opp de to nye asteroidene også her, da kan det skje en litt uventet ting. En kule kan i teorien treffe en av disse asteroidene. Dette har vi ikke tatt hensyn til her, men det kunne vi gjort ved å flytte koden som lager nye asteroider inn i `Asteroide.draw`, men da måtte vi sendt med listen `nyeAsteroider`. Hvis en kule treffer en av de nye asteroidene, som er nesten umulig pga. avstanden mellom kuler og hastighetene asteroidene kan bevege seg i, vil kulen forsvinne, og den nye asteroiden først dukke opp neste opptegning. Legg merke til at vi gjenbruker variablene `retning`, `fart` og `nyAsteroide` når vi skal opprette asteroide nummer to.
+  
+  Etter løkken som tegner opp asteroidene flytter vi alle de nye asteroidene til lista `asteroider`. Og så tømmer vi lista med de nye asteroidene. Dette gjør vi bare om det finnes noen nye asteroider.
+
+## Game Over {.check}
+  
+  Asteroidene skal jo ikke bare ødelegges av kulene, men ødelegge skipet til spilleren om spilleren kolliderer med dem. 
 
 # Finpussen {.activity}
 
@@ -787,9 +1147,9 @@ Nå er spillet ganske komplett, men det finnes alltid rom for å utvide ting og 
 
 + Grafikk
   
-  Her har vi vært ganske tro mot originalen, og lagd et spill som ser nesten helt likt ut. Grafikken er derfor ganske enkel. Trekanter, streker og mangekanter. Det ville sett mer imponerende ut med noe litt stiligere. Du kan tegne bilder som du kan bruke istedenfor, eller lage mer detaljerte tegninger ved å bruke farger og flere mangekanter. Det finnes utrolig mange muligheter for hva du kan gjøre med grafikken.
+  Her har vi vært ganske tro mot originalen, og lagd et spill som ser nesten helt likt ut. Grafikken er derfor ganske enkel. Trekanter, streker og mangekanter. Det ville sett mer imponerende ut med noe litt stiligere. Du kan tegne bilder som du kan bruke istedenfor, eller lage mer detaljerte tegninger ved å bruke farger og flere mangekanter. Det finnes utrolig mange muligheter for hva du kan gjøre med grafikken. Du kan også legge til ting som eksplosjoner, stjerner og andre detaljer.
 
 + Flere spillere
   
-  Det er morsommere å spille sammen. Kan du gjøre om spillet til å fungere for to spillere?
+  Det er morsommere å spille sammen. Kan du gjøre om spillet til å fungere for to spillere? Hvordan får du best til at det kan være flere skip samtidig? Husk at du må oppdatere styringen også.
 
